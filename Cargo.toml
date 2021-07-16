@@ -23,7 +23,7 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
 	"render",
 	"bevy_winit"
 ]}
-egui = "0.13.0"
+egui = { version = "0.13.0", default-features = false, features = [ "default_fonts", "multi_threaded"] }
 webbrowser = { version = "0.5.5", optional = true }
 winit = { version = "0.25.0", features = ["x11"], default-features = false }
 
