@@ -4,7 +4,7 @@ use bevy_egui::{egui, EguiContext, EguiPlugin, EguiSettings};
 const BEVY_TEXTURE_ID: u64 = 0;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .insert_resource(Msaa { samples: 4 })
         .init_resource::<UiState>()
@@ -29,9 +29,23 @@ fn load_assets(mut egui_context: ResMut<EguiContext>, assets: Res<AssetServer>) 
     egui_context.set_egui_texture(BEVY_TEXTURE_ID, texture_handle);
 }
 
-fn update_ui_scale_factor(mut egui_settings: ResMut<EguiSettings>, windows: Res<Windows>) {
-    if let Some(window) = windows.get_primary() {
-        egui_settings.scale_factor = 1.0 / window.scale_factor();
+pub fn update_ui_scale_factor(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut toggle_scale_factor: Local<Option<bool>>,
+    mut egui_settings: ResMut<EguiSettings>,
+    windows: Res<Windows>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Slash) || toggle_scale_factor.is_none() {
+        *toggle_scale_factor = Some(!toggle_scale_factor.unwrap_or(true));
+
+        if let Some(window) = windows.get_primary() {
+            let scale_factor = if toggle_scale_factor.unwrap() {
+                1.0
+            } else {
+                1.0 / window.scale_factor()
+            };
+            egui_settings.scale_factor = scale_factor;
+        }
     }
 }
 
@@ -93,7 +107,7 @@ fn ui_example(
         ui.heading("Egui Template");
         ui.hyperlink("https://github.com/emilk/egui_template");
         ui.add(egui::github_link_file_line!(
-            "https://github.com/emilk/egui_template/blob/master/",
+            "https://github.com/mvlabat/bevy_egui/blob/main/",
             "Direct link to source code."
         ));
         egui::warn_if_debug_build(ui);
