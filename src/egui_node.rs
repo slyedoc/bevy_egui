@@ -43,7 +43,7 @@ impl FromWorld for EguiShaders {
 
 
         let shader_source = ShaderSource::Wgsl(include_str!("egui.wgsl").into());
-        let shader_module = render_device.create_shader_module(ShaderModuleDescriptor {
+        let shader_module = render_device.create_shader_module(&ShaderModuleDescriptor {
             label: Some("egui shader"),
             source: shader_source,
         });
