@@ -277,7 +277,7 @@ impl bevy::render::render_graph::Node for EguiNode {
         let index_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             label: Some("egui index buffer"),
             contents: &index_buffer,
-            usage: BufferUsages::INDEX,
+            usage: BufferUsages::INDEX | BufferUsages::MAP_WRITE,
         });
 
         self.vertex_buffer = Some(vertex_buffer);
