@@ -20,9 +20,10 @@ open_url = ["webbrowser"]
 
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "bevy_render2",
+    "render",
     "bevy_winit",
-    "bevy_core_pipeline"
+    "bevy_core_pipeline",
+    "png",
 ] }
 egui = "0.15.0"
 webbrowser = { version = "0.5.5", optional = true }

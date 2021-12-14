@@ -1,9 +1,6 @@
 use bevy::{
     prelude::*,
-    render2::{
-        render_asset::RenderAssets, render_resource::BindGroup, renderer::RenderDevice,
-        texture::Image,
-    },
+    render::{render_asset::RenderAssets, render_resource::BindGroup, renderer::RenderDevice},
     utils::HashMap,
     window::WindowId,
 };

@@ -70,8 +70,8 @@ use bevy::{
     },
     input::InputSystem,
     log,
-    prelude::{AssetEvent, Assets, Commands, EventReader, ResMut},
-    render2::{render_graph::RenderGraph, texture::Image, RenderApp, RenderStage},
+    prelude::{AssetEvent, Assets, Commands, EventReader, Image, ResMut},
+    render::{render_graph::RenderGraph, RenderApp, RenderStage},
     utils::HashMap,
     window::WindowId,
 };

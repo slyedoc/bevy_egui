@@ -1,25 +1,16 @@
 use bevy::{
     core::{bytes_of, cast_slice},
-    prelude::{FromWorld, World},
-    render2::{
-        render_graph::{Node, NodeRunError, RenderGraphContext},
-        render_resource::{
-            BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-            BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
-            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferInitDescriptor,
-            BufferSize, BufferUsages, ColorTargetState, ColorWrites, Extent3d, FrontFace,
-            IndexFormat, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
-            PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-            ShaderStages, TextureDimension, TextureFormat, TextureSampleType, TextureViewDimension,
-            VertexAttribute, VertexFormat, VertexStepMode,
-        },
+    prelude::*,
+    render::{
+        render_graph::{NodeRunError, RenderGraphContext},
+        render_resource::{BindGroup, BindGroupLayout, Buffer, RenderPipeline},
         renderer::{RenderContext, RenderDevice, RenderQueue},
-        texture::{BevyDefault, Image},
+        texture::BevyDefault,
         view::ExtractedWindows,
     },
     window::WindowId,
 };
-use wgpu::{BufferBinding, BufferDescriptor, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{util::BufferInitDescriptor, *};
 
 use crate::render_systems::{
     EguiTexture, EguiTextureBindGroups, EguiTransform, ExtractedEguiContext, ExtractedEguiSettings,
@@ -203,7 +194,7 @@ impl EguiNode {
     }
 }
 
-impl Node for EguiNode {
+impl bevy::render::render_graph::Node for EguiNode {
     fn update(&mut self, world: &mut World) {
         let mut shapes = world.get_resource_mut::<ExtractedShapes>().unwrap();
         let shapes = shapes.0.get_mut(&self.window_id).unwrap();
