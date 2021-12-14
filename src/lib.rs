@@ -70,10 +70,10 @@ use bevy::{
     },
     input::InputSystem,
     log,
-    prelude::{AssetEvent, Assets, Commands, EventReader, ResMut},
-    render2::{render_graph::RenderGraph, texture::Image, RenderApp, RenderStage},
+    prelude::*,
+
     utils::HashMap,
-    window::WindowId,
+    window::WindowId, render::{render_graph::RenderGraph, RenderStage, RenderApp},
 };
 #[cfg(all(feature = "manage_clipboard", not(target_arch = "wasm32")))]
 use clipboard::{ClipboardContext, ClipboardProvider};

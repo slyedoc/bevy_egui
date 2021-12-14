@@ -1,25 +1,10 @@
 use bevy::{
     core::{bytes_of, cast_slice},
-    prelude::{FromWorld, World},
-    render2::{
-        render_graph::{Node, NodeRunError, RenderGraphContext},
-        render_resource::{
-            BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-            BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
-            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer,
-            BufferSize, BufferUsages, ColorTargetState, ColorWrites, Extent3d, FrontFace,
-            IndexFormat, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
-            PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-            ShaderStages, TextureDimension, TextureFormat, TextureSampleType, TextureViewDimension,
-            VertexAttribute, VertexFormat, VertexStepMode,
-        },
-        renderer::{RenderContext, RenderDevice, RenderQueue},
-        texture::{BevyDefault, Image},
-        view::ExtractedWindows,
-    },
-    window::WindowId,
+    prelude::{FromWorld, World, Image},
+   
+    window::WindowId, render::{render_resource::{Buffer, RenderPipeline, BindGroupLayout, BindGroup}, renderer::{RenderDevice, RenderContext, RenderQueue}, render_graph::{Node, RenderGraphContext, NodeRunError}, view::ExtractedWindows, texture::BevyDefault},
 };
-use wgpu::{BufferBinding, BufferDescriptor, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{BufferBinding, BufferDescriptor, ShaderModuleDescriptor, ShaderSource, Extent3d, TextureDimension, TextureFormat, BufferSize, BufferUsages, BindGroupLayoutDescriptor, BindGroupLayoutEntry, ShaderStages, BindingType, BindGroupEntry, BindGroupDescriptor, BindingResource, TextureSampleType, TextureViewDimension, PipelineLayoutDescriptor, VertexStepMode, VertexAttribute, VertexFormat, ColorTargetState, BlendState, BlendComponent, BlendFactor, BlendOperation, ColorWrites, PrimitiveState, FrontFace, MultisampleState, RenderPassDescriptor, RenderPassColorAttachment, Operations, LoadOp, IndexFormat};
 
 use crate::render_systems::{
     EguiTexture, EguiTextureBindGroups, EguiTransform, ExtractedEguiContext, ExtractedEguiSettings,
@@ -68,7 +53,7 @@ impl FromWorld for EguiPipeline {
                 }],
             });
         let transform_bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            label: Some("egui transform bind gruop"),
+            label: Some("egui transform bind group"),
             layout: &transform_bind_group_layout,
             entries: &[BindGroupEntry {
                 binding: 0,

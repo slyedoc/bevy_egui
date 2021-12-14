@@ -1,11 +1,7 @@
 use bevy::{
     prelude::*,
-    render2::{
-        render_asset::RenderAssets, render_resource::BindGroup, renderer::RenderDevice,
-        texture::Image,
-    },
     utils::HashMap,
-    window::WindowId,
+    window::WindowId, render::{render_asset::RenderAssets, renderer::RenderDevice, render_resource::BindGroup},
 };
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource};
 

@@ -20,7 +20,7 @@ open_url = ["webbrowser"]
 
 [dependencies]
 bevy = { version = "0.5.0", default-features = false, features = [
-    "bevy_render2",
+    "render",
     "bevy_winit",
     "bevy_core_pipeline"
 ] }
@@ -44,4 +44,4 @@ bevy = { version = "0.5.0", default-features = false, features = [
 ] }
 
 [patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy.git", branch = "main"}
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main"}
