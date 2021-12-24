@@ -16,7 +16,6 @@ use bevy::{
     window::{
         CursorLeft, CursorMoved, ReceivedCharacter, WindowCreated, WindowFocused, WindowId, Windows,
     },
-    winit::WinitWindows,
 };
 
 #[derive(SystemParam)]
@@ -307,7 +306,7 @@ pub fn process_output(
     mut egui_output: ResMut<HashMap<WindowId, EguiOutput>>,
     mut egui_shapes: ResMut<HashMap<WindowId, EguiShapes>>,
     #[cfg(feature = "manage_clipboard")] mut egui_clipboard: ResMut<crate::EguiClipboard>,
-    winit_windows: Res<WinitWindows>,
+    mut windows: ResMut<Windows>,
 ) {
     for id in egui_context.ctx.keys().copied() {
         let (output, shapes) = egui_context.ctx_for_window(id).end_frame();
@@ -319,10 +318,10 @@ pub fn process_output(
             egui_clipboard.set_contents(&output.copied_text);
         }
 
-        if let Some(winit_window) = winit_windows.get_window(id) {
-            winit_window.set_cursor_icon(
-                egui_to_winit_cursor_icon(output.cursor_icon)
-                    .unwrap_or(winit::window::CursorIcon::Default),
+        if let Some(window) = windows.get_mut(id) {
+            window.set_cursor_icon(
+                egui_to_bevy_cursor_icon(output.cursor_icon)
+                    .unwrap_or(bevy::window::CursorIcon::Default),
             );
         }
 
@@ -340,32 +339,32 @@ pub fn process_output(
     }
 }
 
-fn egui_to_winit_cursor_icon(cursor_icon: egui::CursorIcon) -> Option<winit::window::CursorIcon> {
+fn egui_to_bevy_cursor_icon(cursor_icon: egui::CursorIcon) -> Option<bevy::window::CursorIcon> {
     match cursor_icon {
-        egui::CursorIcon::Default => Some(winit::window::CursorIcon::Default),
-        egui::CursorIcon::PointingHand => Some(winit::window::CursorIcon::Hand),
-        egui::CursorIcon::ResizeHorizontal => Some(winit::window::CursorIcon::EwResize),
-        egui::CursorIcon::ResizeNeSw => Some(winit::window::CursorIcon::NeswResize),
-        egui::CursorIcon::ResizeNwSe => Some(winit::window::CursorIcon::NwseResize),
-        egui::CursorIcon::ResizeVertical => Some(winit::window::CursorIcon::NsResize),
-        egui::CursorIcon::Text => Some(winit::window::CursorIcon::Text),
-        egui::CursorIcon::Grab => Some(winit::window::CursorIcon::Grab),
-        egui::CursorIcon::Grabbing => Some(winit::window::CursorIcon::Grabbing),
-        egui::CursorIcon::ContextMenu => Some(winit::window::CursorIcon::ContextMenu),
-        egui::CursorIcon::Help => Some(winit::window::CursorIcon::Help),
-        egui::CursorIcon::Progress => Some(winit::window::CursorIcon::Progress),
-        egui::CursorIcon::Wait => Some(winit::window::CursorIcon::Wait),
-        egui::CursorIcon::Cell => Some(winit::window::CursorIcon::Cell),
-        egui::CursorIcon::Crosshair => Some(winit::window::CursorIcon::Crosshair),
-        egui::CursorIcon::VerticalText => Some(winit::window::CursorIcon::VerticalText),
-        egui::CursorIcon::Alias => Some(winit::window::CursorIcon::Alias),
-        egui::CursorIcon::Copy => Some(winit::window::CursorIcon::Copy),
-        egui::CursorIcon::Move => Some(winit::window::CursorIcon::Move),
-        egui::CursorIcon::NoDrop => Some(winit::window::CursorIcon::NoDrop),
-        egui::CursorIcon::NotAllowed => Some(winit::window::CursorIcon::NotAllowed),
-        egui::CursorIcon::AllScroll => Some(winit::window::CursorIcon::AllScroll),
-        egui::CursorIcon::ZoomIn => Some(winit::window::CursorIcon::ZoomIn),
-        egui::CursorIcon::ZoomOut => Some(winit::window::CursorIcon::ZoomOut),
+        egui::CursorIcon::Default => Some(bevy::window::CursorIcon::Default),
+        egui::CursorIcon::PointingHand => Some(bevy::window::CursorIcon::Hand),
+        egui::CursorIcon::ResizeHorizontal => Some(bevy::window::CursorIcon::EwResize),
+        egui::CursorIcon::ResizeNeSw => Some(bevy::window::CursorIcon::NeswResize),
+        egui::CursorIcon::ResizeNwSe => Some(bevy::window::CursorIcon::NwseResize),
+        egui::CursorIcon::ResizeVertical => Some(bevy::window::CursorIcon::NsResize),
+        egui::CursorIcon::Text => Some(bevy::window::CursorIcon::Text),
+        egui::CursorIcon::Grab => Some(bevy::window::CursorIcon::Grab),
+        egui::CursorIcon::Grabbing => Some(bevy::window::CursorIcon::Grabbing),
+        egui::CursorIcon::ContextMenu => Some(bevy::window::CursorIcon::ContextMenu),
+        egui::CursorIcon::Help => Some(bevy::window::CursorIcon::Help),
+        egui::CursorIcon::Progress => Some(bevy::window::CursorIcon::Progress),
+        egui::CursorIcon::Wait => Some(bevy::window::CursorIcon::Wait),
+        egui::CursorIcon::Cell => Some(bevy::window::CursorIcon::Cell),
+        egui::CursorIcon::Crosshair => Some(bevy::window::CursorIcon::Crosshair),
+        egui::CursorIcon::VerticalText => Some(bevy::window::CursorIcon::VerticalText),
+        egui::CursorIcon::Alias => Some(bevy::window::CursorIcon::Alias),
+        egui::CursorIcon::Copy => Some(bevy::window::CursorIcon::Copy),
+        egui::CursorIcon::Move => Some(bevy::window::CursorIcon::Move),
+        egui::CursorIcon::NoDrop => Some(bevy::window::CursorIcon::NoDrop),
+        egui::CursorIcon::NotAllowed => Some(bevy::window::CursorIcon::NotAllowed),
+        egui::CursorIcon::AllScroll => Some(bevy::window::CursorIcon::AllScroll),
+        egui::CursorIcon::ZoomIn => Some(bevy::window::CursorIcon::ZoomIn),
+        egui::CursorIcon::ZoomOut => Some(bevy::window::CursorIcon::ZoomOut),
         egui::CursorIcon::None => None,
     }
 }
