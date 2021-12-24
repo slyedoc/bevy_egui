@@ -1,26 +1,25 @@
 use bevy::{
     core::{bytes_of, cast_slice},
-    prelude::{FromWorld, World},
+    prelude::*,
     render::{
-        render_graph::{Node, NodeRunError, RenderGraphContext},
+        render_graph::{NodeRunError, RenderGraphContext},
         render_resource::{
             BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
             BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
-            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferSize,
-            BufferUsages, ColorTargetState, ColorWrites, Extent3d, FrontFace, IndexFormat, LoadOp,
+            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferBinding,
+            BufferBindingType, BufferDescriptor, BufferInitDescriptor, BufferSize, BufferUsages,
+            ColorTargetState, ColorWrites, Extent3d, FrontFace, IndexFormat, LoadOp,
             MultisampleState, Operations, PipelineLayoutDescriptor, PrimitiveState,
-            RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, ShaderStages,
-            TextureDimension, TextureFormat, TextureSampleType, TextureViewDimension,
-            VertexAttribute, VertexFormat, VertexStepMode,
+            RawFragmentState, RawRenderPipelineDescriptor, RawVertexBufferLayout, RawVertexState,
+            RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, SamplerBindingType,
+            ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureDimension, TextureFormat,
+            TextureSampleType, TextureViewDimension, VertexAttribute, VertexFormat, VertexStepMode,
         },
         renderer::{RenderContext, RenderDevice, RenderQueue},
-        texture::{BevyDefault, Image},
+        texture::BevyDefault,
         view::ExtractedWindows,
     },
     window::WindowId,
-};
-use wgpu::{
-    BufferBinding, BufferDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderSource,
 };
 
 use crate::render_systems::{
@@ -62,7 +61,7 @@ impl FromWorld for EguiPipeline {
                     binding: 0,
                     visibility: ShaderStages::VERTEX,
                     ty: BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
+                        ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: Some(transform_buffer_size),
                     },
@@ -110,64 +109,64 @@ impl FromWorld for EguiPipeline {
             push_constant_ranges: &[],
         });
 
-        let render_pipeline =
-            render_device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("egui render pipeline"),
-                layout: Some(&pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader_module,
-                    entry_point: "vs_main",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: 32,
-                        step_mode: VertexStepMode::Vertex,
-                        attributes: &[
-                            VertexAttribute {
-                                format: VertexFormat::Float32x2,
-                                offset: 0,
-                                shader_location: 0,
-                            },
-                            VertexAttribute {
-                                format: VertexFormat::Float32x2,
-                                offset: 8,
-                                shader_location: 1,
-                            },
-                            VertexAttribute {
-                                format: VertexFormat::Float32x4,
-                                offset: 16,
-                                shader_location: 2,
-                            },
-                        ],
-                    }],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader_module,
-                    entry_point: "fs_main",
-                    targets: &[ColorTargetState {
-                        format: TextureFormat::bevy_default(),
-                        blend: Some(BlendState {
-                            color: BlendComponent {
-                                src_factor: BlendFactor::One,
-                                dst_factor: BlendFactor::OneMinusSrcAlpha,
-                                operation: BlendOperation::Add,
-                            },
-                            alpha: BlendComponent {
-                                src_factor: BlendFactor::One,
-                                dst_factor: BlendFactor::OneMinusSrcAlpha,
-                                operation: BlendOperation::Add,
-                            },
-                        }),
-                        write_mask: ColorWrites::ALL,
-                    }],
-                }),
-                primitive: PrimitiveState {
-                    front_face: FrontFace::Cw,
-                    cull_mode: None,
-                    ..Default::default()
-                },
-                depth_stencil: None,
-                multisample: MultisampleState::default(),
-                multiview: None,
-            });
+        let render_pipeline = render_device.create_render_pipeline(&RawRenderPipelineDescriptor {
+            label: Some("egui render pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: RawVertexState {
+                module: &shader_module,
+                entry_point: "vs_main",
+                buffers: &[RawVertexBufferLayout {
+                    array_stride: 32,
+                    step_mode: VertexStepMode::Vertex,
+                    attributes: &[
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 8,
+                            shader_location: 1,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x4,
+                            offset: 16,
+                            shader_location: 2,
+                        },
+                    ],
+                }],
+            },
+            primitive: PrimitiveState {
+                front_face: FrontFace::Cw,
+                cull_mode: None,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: MultisampleState::default(),
+            fragment: Some(RawFragmentState {
+                module: &shader_module,
+                entry_point: "fs_main",
+                targets: &[ColorTargetState {
+                    format: TextureFormat::bevy_default(),
+                    blend: Some(BlendState {
+                        color: BlendComponent {
+                            src_factor: BlendFactor::One,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                        alpha: BlendComponent {
+                            src_factor: BlendFactor::One,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: ColorWrites::ALL,
+                }],
+            }),
+            // fragment: None,
+            multiview: None,
+        });
 
         EguiPipeline {
             pipeline: render_pipeline,
@@ -187,11 +186,7 @@ struct DrawCommand {
 
 pub struct EguiNode {
     window_id: WindowId,
-    vertex_data: Vec<u8>,
-    vertex_buffer_capacity: usize,
     vertex_buffer: Option<Buffer>,
-    index_data: Vec<u8>,
-    index_buffer_capacity: usize,
     index_buffer: Option<Buffer>,
     draw_commands: Vec<DrawCommand>,
 }
@@ -201,17 +196,13 @@ impl EguiNode {
         EguiNode {
             window_id,
             draw_commands: Vec::new(),
-            vertex_data: Vec::new(),
-            vertex_buffer_capacity: 0,
             vertex_buffer: None,
-            index_data: Vec::new(),
-            index_buffer_capacity: 0,
             index_buffer: None,
         }
     }
 }
 
-impl Node for EguiNode {
+impl bevy::render::render_graph::Node for EguiNode {
     fn update(&mut self, world: &mut World) {
         let mut shapes = world.get_resource_mut::<ExtractedShapes>().unwrap();
         let shapes = shapes.0.get_mut(&self.window_id).unwrap();
@@ -231,11 +222,11 @@ impl Node for EguiNode {
 
         let egui_paint_jobs = egui_context[&self.window_id].tessellate(shapes);
 
+        let mut vertex_buffer = Vec::<u8>::new();
+        let mut index_buffer = Vec::<u8>::new();
         let mut index_offset = 0;
 
         self.draw_commands.clear();
-        self.vertex_data.clear();
-        self.index_data.clear();
 
         for egui::ClippedMesh(rect, triangles) in &egui_paint_jobs {
             let (x, y, w, h) = (
@@ -254,11 +245,9 @@ impl Node for EguiNode {
             }
 
             for vertex in &triangles.vertices {
-                self.vertex_data
-                    .extend_from_slice(bytes_of(&[vertex.pos.x, vertex.pos.y]));
-                self.vertex_data
-                    .extend_from_slice(bytes_of(&[vertex.uv.x, vertex.uv.y]));
-                self.vertex_data
+                vertex_buffer.extend_from_slice(bytes_of(&[vertex.pos.x, vertex.pos.y]));
+                vertex_buffer.extend_from_slice(bytes_of(&[vertex.uv.x, vertex.uv.y]));
+                vertex_buffer
                     .extend_from_slice(bytes_of(&vertex.color.to_array().map(|c| c as f32)));
             }
             let indices_with_offset = triangles
@@ -266,8 +255,7 @@ impl Node for EguiNode {
                 .iter()
                 .map(|i| i + index_offset)
                 .collect::<Vec<_>>();
-            self.index_data
-                .extend_from_slice(cast_slice(indices_with_offset.as_slice()));
+            index_buffer.extend_from_slice(cast_slice(indices_with_offset.as_slice()));
             index_offset += triangles.vertices.len() as u32;
 
             let texture_handle = match triangles.texture_id {
@@ -289,32 +277,19 @@ impl Node for EguiNode {
             });
         }
 
-        if self.vertex_data.len() > self.vertex_buffer_capacity {
-            self.vertex_buffer_capacity = if self.vertex_data.len().is_power_of_two() {
-                self.vertex_data.len()
-            } else {
-                self.vertex_data.len().next_power_of_two()
-            };
-            self.vertex_buffer = Some(render_device.create_buffer(&BufferDescriptor {
-                label: Some("egui vertex buffer"),
-                size: self.vertex_buffer_capacity as wgpu::BufferAddress,
-                usage: BufferUsages::COPY_DST | BufferUsages::VERTEX,
-                mapped_at_creation: false,
-            }));
-        }
-        if self.index_data.len() > self.index_buffer_capacity {
-            self.index_buffer_capacity = if self.index_data.len().is_power_of_two() {
-                self.index_data.len()
-            } else {
-                self.index_data.len().next_power_of_two()
-            };
-            self.index_buffer = Some(render_device.create_buffer(&BufferDescriptor {
-                label: Some("egui index buffer"),
-                size: self.index_buffer_capacity as wgpu::BufferAddress,
-                usage: BufferUsages::COPY_DST | BufferUsages::INDEX,
-                mapped_at_creation: false,
-            }));
-        }
+        let vertex_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("egui vertex buffer"),
+            contents: &vertex_buffer,
+            usage: BufferUsages::VERTEX,
+        });
+        let index_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("egui index buffer"),
+            contents: &index_buffer,
+            usage: BufferUsages::INDEX,
+        });
+
+        self.vertex_buffer = Some(vertex_buffer);
+        self.index_buffer = Some(index_buffer);
     }
 
     fn run(
@@ -325,9 +300,6 @@ impl Node for EguiNode {
     ) -> Result<(), NodeRunError> {
         let egui_shaders = world.get_resource::<EguiPipeline>().unwrap();
         let render_queue = world.get_resource::<RenderQueue>().unwrap();
-
-        render_queue.write_buffer(self.vertex_buffer.as_ref().unwrap(), 0, &self.vertex_data);
-        render_queue.write_buffer(self.index_buffer.as_ref().unwrap(), 0, &self.index_data);
 
         let egui_transform =
             world.get_resource::<ExtractedWindowSizes>().unwrap().0[&self.window_id].1;
