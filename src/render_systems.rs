@@ -1,10 +1,13 @@
 use bevy::{
     prelude::*,
-    render::{render_asset::RenderAssets, render_resource::BindGroup, renderer::RenderDevice},
+    render::{
+        render_asset::RenderAssets,
+        render_resource::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource},
+        renderer::RenderDevice,
+    },
     utils::HashMap,
     window::WindowId,
 };
-use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource};
 
 #[repr(C)]
 #[derive(bytemuck::Zeroable, bytemuck::Pod, Clone, Copy)]

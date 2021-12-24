@@ -3,14 +3,24 @@ use bevy::{
     prelude::*,
     render::{
         render_graph::{NodeRunError, RenderGraphContext},
-        render_resource::{BindGroup, BindGroupLayout, Buffer, RenderPipeline},
+        render_resource::{
+            BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
+            BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
+            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferBinding,
+            BufferBindingType, BufferDescriptor, BufferInitDescriptor, BufferSize, BufferUsages,
+            ColorTargetState, ColorWrites, Extent3d, FrontFace, IndexFormat, LoadOp,
+            MultisampleState, Operations, PipelineLayoutDescriptor, PrimitiveState,
+            RawFragmentState, RawRenderPipelineDescriptor, RawVertexBufferLayout, RawVertexState,
+            RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, SamplerBindingType,
+            ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureDimension, TextureFormat,
+            TextureSampleType, TextureViewDimension, VertexAttribute, VertexFormat, VertexStepMode,
+        },
         renderer::{RenderContext, RenderDevice, RenderQueue},
         texture::BevyDefault,
         view::ExtractedWindows,
     },
     window::WindowId,
 };
-use wgpu::{util::BufferInitDescriptor, *};
 
 use crate::render_systems::{
     EguiTexture, EguiTextureBindGroups, EguiTransform, ExtractedEguiContext, ExtractedEguiSettings,
@@ -51,7 +61,7 @@ impl FromWorld for EguiPipeline {
                     binding: 0,
                     visibility: ShaderStages::VERTEX,
                     ty: BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
+                        ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: Some(transform_buffer_size),
                     },
@@ -88,10 +98,7 @@ impl FromWorld for EguiPipeline {
                     BindGroupLayoutEntry {
                         binding: 1,
                         visibility: ShaderStages::FRAGMENT,
-                        ty: BindingType::Sampler {
-                            filtering: true,
-                            comparison: false,
-                        },
+                        ty: BindingType::Sampler(SamplerBindingType::Filtering),
                         count: None,
                     },
                 ],
@@ -102,63 +109,64 @@ impl FromWorld for EguiPipeline {
             push_constant_ranges: &[],
         });
 
-        let render_pipeline =
-            render_device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("egui render pipeline"),
-                layout: Some(&pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader_module,
-                    entry_point: "vs_main",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: 32,
-                        step_mode: VertexStepMode::Vertex,
-                        attributes: &[
-                            VertexAttribute {
-                                format: VertexFormat::Float32x2,
-                                offset: 0,
-                                shader_location: 0,
-                            },
-                            VertexAttribute {
-                                format: VertexFormat::Float32x2,
-                                offset: 8,
-                                shader_location: 1,
-                            },
-                            VertexAttribute {
-                                format: VertexFormat::Float32x4,
-                                offset: 16,
-                                shader_location: 2,
-                            },
-                        ],
-                    }],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader_module,
-                    entry_point: "fs_main",
-                    targets: &[ColorTargetState {
-                        format: TextureFormat::bevy_default(),
-                        blend: Some(BlendState {
-                            color: BlendComponent {
-                                src_factor: BlendFactor::One,
-                                dst_factor: BlendFactor::OneMinusSrcAlpha,
-                                operation: BlendOperation::Add,
-                            },
-                            alpha: BlendComponent {
-                                src_factor: BlendFactor::One,
-                                dst_factor: BlendFactor::OneMinusSrcAlpha,
-                                operation: BlendOperation::Add,
-                            },
-                        }),
-                        write_mask: ColorWrites::ALL,
-                    }],
-                }),
-                primitive: PrimitiveState {
-                    front_face: FrontFace::Cw,
-                    cull_mode: None,
-                    ..Default::default()
-                },
-                depth_stencil: None,
-                multisample: MultisampleState::default(),
-            });
+        let render_pipeline = render_device.create_render_pipeline(&RawRenderPipelineDescriptor {
+            label: Some("egui render pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: RawVertexState {
+                module: &shader_module,
+                entry_point: "vs_main".into(),
+                buffers: &[RawVertexBufferLayout {
+                    array_stride: 32,
+                    step_mode: VertexStepMode::Vertex,
+                    attributes: &[
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 8,
+                            shader_location: 1,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x4,
+                            offset: 16,
+                            shader_location: 2,
+                        },
+                    ],
+                }],
+            },
+            primitive: PrimitiveState {
+                front_face: FrontFace::Cw,
+                cull_mode: None,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: MultisampleState::default(),
+            fragment: Some(RawFragmentState {
+                module: &shader_module,
+                entry_point: "fs_main",
+                targets: &[ColorTargetState {
+                    format: TextureFormat::bevy_default(),
+                    blend: Some(BlendState {
+                        color: BlendComponent {
+                            src_factor: BlendFactor::One,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                        alpha: BlendComponent {
+                            src_factor: BlendFactor::One,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: ColorWrites::ALL,
+                }],
+            }),
+            // fragment: None,
+            multiview: None,
+        });
 
         EguiPipeline {
             pipeline: render_pipeline,
@@ -277,7 +285,7 @@ impl bevy::render::render_graph::Node for EguiNode {
         let index_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             label: Some("egui index buffer"),
             contents: &index_buffer,
-            usage: BufferUsages::INDEX | BufferUsages::MAP_WRITE,
+            usage: BufferUsages::INDEX,
         });
 
         self.vertex_buffer = Some(vertex_buffer);
