@@ -5,7 +5,7 @@ use crate::{
     },
     EguiRenderToImage,
 };
-use bevy_asset::prelude::*;
+use bevy_asset::{prelude::*, weak_handle};
 use bevy_ecs::{
     prelude::*,
     world::{FromWorld, World},
@@ -33,7 +33,7 @@ use bevy_render::{
 use egui::{TextureFilter, TextureOptions};
 
 /// Egui shader.
-pub const EGUI_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(9898276442290979394);
+pub const EGUI_SHADER_HANDLE: Handle<Shader> = weak_handle!("d4769704-d2fe-4d23-afcb-696ff5961f8a");
 
 /// Egui render pipeline.
 #[derive(Resource)]

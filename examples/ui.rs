@@ -79,7 +79,7 @@ fn update_ui_scale_factor_system(
     if keyboard_input.just_pressed(KeyCode::Slash) || toggle_scale_factor.is_none() {
         *toggle_scale_factor = Some(!toggle_scale_factor.unwrap_or(true));
 
-        if let Ok((mut egui_settings, window)) = contexts.get_single_mut() {
+        if let Ok((mut egui_settings, window)) = contexts.single_mut() {
             let scale_factor = if toggle_scale_factor.unwrap() {
                 1.0
             } else {

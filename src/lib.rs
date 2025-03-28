@@ -147,7 +147,6 @@ use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
     prelude::*,
     query::{QueryData, QueryEntityError},
-    schedule::apply_deferred,
     system::SystemParam,
 };
 #[cfg(feature = "render")]
@@ -847,7 +846,7 @@ impl Plugin for EguiPlugin {
             PreStartup,
             (
                 setup_new_windows_system,
-                apply_deferred,
+                ApplyDeferred,
                 update_ui_size_and_scale_system,
             )
                 .chain()
@@ -859,7 +858,7 @@ impl Plugin for EguiPlugin {
             PreUpdate,
             (
                 setup_new_windows_system,
-                apply_deferred,
+                ApplyDeferred,
                 update_ui_size_and_scale_system,
             )
                 .chain()
