@@ -17,12 +17,13 @@ fn main() {
         .run();
 }
 
-fn configure_context(mut egui_settings: Query<&mut EguiContextSettings>) {
-    egui_settings.single_mut().run_manually = true;
+fn configure_context(mut egui_settings: Single<&mut EguiContextSettings>) {
+    egui_settings.run_manually = true;
 }
 
 fn ui_example_system(mut contexts: Query<(&mut EguiContext, &mut EguiInput, &mut EguiFullOutput)>) {
-    let (mut ctx, mut egui_input, mut egui_full_output) = contexts.single_mut();
+    let (mut ctx, mut egui_input, mut egui_full_output) =
+        contexts.single_mut().expect("Egui contexts not found");
 
     let ui = |ctx: &egui::Context| {
         egui::Window::new("Hello").show(ctx, |ui| {

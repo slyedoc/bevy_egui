@@ -230,12 +230,15 @@ fn ui_example_system(
             .get(&bevy_icon_handle)
             .expect("images should be created");
 
-        contexts
-            .ctx_mut()
-            .copy_image(egui::ColorImage::from_rgba_unmultiplied(
-                image.size().to_array().map(|a| a as usize),
-                &image.data,
-            ));
+        match &image.data {
+            Some(data) => contexts
+                .ctx_mut()
+                .copy_image(egui::ColorImage::from_rgba_unmultiplied(
+                    image.size().to_array().map(|a| a as usize),
+                    data.as_slice(),
+                )),
+            None => error!("Image data is not available"),
+        }
     }
     if remove {
         contexts.remove_image(&images.bevy_icon);

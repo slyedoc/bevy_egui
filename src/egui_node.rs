@@ -311,8 +311,8 @@ impl Node for EguiNode {
                     (
                         EguiPipelineKey::from_gpu_image(gpu_image),
                         &gpu_image.texture_view,
-                        gpu_image.size.x,
-                        gpu_image.size.y,
+                        gpu_image.size.width,
+                        gpu_image.size.height,
                         extracted_render_to_image.load_op,
                     )
                 }
