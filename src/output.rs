@@ -23,7 +23,7 @@ pub fn process_output_system(
     #[cfg(all(feature = "manage_clipboard", not(target_os = "android")))]
     mut egui_clipboard: bevy_ecs::system::ResMut<crate::EguiClipboard>,
     mut event: EventWriter<RequestRedraw>,
-    #[cfg(windows)] mut last_cursor_icon: Local<bevy::platform_support::collections::HashMap<Entity, egui::CursorIcon>>,
+    #[cfg(windows)] mut last_cursor_icon: Local<bevy_platform_support::collections::HashMap<Entity, egui::CursorIcon>>,
     event_loop_proxy: Option<NonSend<EventLoopProxy<WakeUp>>>,
 ) {
     let mut should_request_redraw = false;
