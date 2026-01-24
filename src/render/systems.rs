@@ -26,9 +26,9 @@ use bevy_render::{
     texture::GpuImage,
     view::ExtractedView,
 };
+use bevy_render::render_resource::{BufferAddress, BufferUsages};
 use bytemuck::cast_slice;
 use itertools::Itertools;
-use wgpu_types::{BufferAddress, BufferUsages};
 
 /// Extracted Egui settings.
 #[derive(Resource, Deref, DerefMut, Default)]

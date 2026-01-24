@@ -58,13 +58,16 @@ use bevy_shader::{Shader, ShaderDefVal};
 use egui::{TextureFilter, TextureOptions};
 
 use bevy_log::{error, info, warn};
-use bevy_render::{render_resource::BindGroupLayoutDescriptor, renderer::RenderAdapterInfo};
-use systems::{EguiTextureId, EguiTransform};
-use wgpu_types::{
-    Backend, BlendState, ColorTargetState, ColorWrites, Extent3d, Features, Limits,
-    MultisampleState, PrimitiveState, PushConstantRange, SamplerBindingType, ShaderStages,
-    TextureDimension, TextureFormat, TextureSampleType, VertexFormat, VertexStepMode,
+use bevy_render::{
+    render_resource::{
+        BindGroupLayoutDescriptor, BlendState, ColorTargetState, ColorWrites, Extent3d,
+        MultisampleState, PrimitiveState, SamplerBindingType, ShaderStages, TextureDimension,
+        TextureFormat, TextureSampleType, VertexFormat, VertexStepMode, WgpuFeatures, WgpuLimits,
+    },
+    renderer::RenderAdapterInfo,
 };
+use systems::{EguiTextureId, EguiTransform};
+use wgpu_types::Backend;
 
 mod render_pass;
 /// Plugin systems for the render app.
@@ -291,8 +294,8 @@ impl EguiPipeline {
     fn get_bindless_array_size(
         settings: &EguiRenderSettings,
         adapter_info: &RenderAdapterInfo,
-        device_features: Features,
-        device_limits: Limits,
+        device_features: WgpuFeatures,
+        device_limits: WgpuLimits,
     ) -> Option<NonZero<u32>> {
         settings.bindless_mode_array_size.and_then(|desired_size| {
             // Don't enable bindless mode on Metal because it is not supported by bevy yet.
@@ -300,11 +303,11 @@ impl EguiPipeline {
             if adapter_info.backend.eq(&Backend::Metal) {
                 warn!("Bindless textures are not yet supported on metal. Disabling bindless mode. See https://github.com/bevyengine/bevy/issues/18149 for more information");
                 None
-            } else if !device_features.contains(Features::TEXTURE_BINDING_ARRAY) {
+            } else if !device_features.contains(WgpuFeatures::TEXTURE_BINDING_ARRAY) {
                 warn!("Feature TEXTURE_BINDING_ARRAY is not supported on this device.");
                 None
-            } else if !device_features.contains(Features::PUSH_CONSTANTS) {
-                warn!("Feature PUSH_CONSTANTS is not supported on this device.");
+            } else if !device_features.contains(WgpuFeatures::IMMEDIATES) {
+                warn!("Feature IMMEDIATES is not supported on this device.");
                 None
             } else {
                 match NonZeroU32::new(min(
@@ -355,14 +358,11 @@ impl SpecializedRenderPipeline for EguiPipeline {
 
     fn specialize(&self, key: Self::Key) -> RenderPipelineDescriptor {
         let mut shader_defs = Vec::new();
-        let mut push_constant_ranges = Vec::new();
+        let mut immediate_size = 0;
 
         if let Some(bindless) = self.bindless {
             shader_defs.push(ShaderDefVal::UInt("BINDLESS".into(), u32::from(bindless)));
-            push_constant_ranges.push(PushConstantRange {
-                stages: ShaderStages::FRAGMENT,
-                range: 0..4,
-            });
+            immediate_size = 4; // 4 bytes for the bindless texture index
         }
 
         RenderPipelineDescriptor {
@@ -401,7 +401,7 @@ impl SpecializedRenderPipeline for EguiPipeline {
             primitive: PrimitiveState::default(),
             depth_stencil: None,
             multisample: MultisampleState::default(),
-            push_constant_ranges,
+            immediate_size,
             zero_initialize_workgroup_memory: false,
         }
     }
