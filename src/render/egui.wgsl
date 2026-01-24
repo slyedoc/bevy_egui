@@ -22,11 +22,10 @@ struct VertexOutput {
 @group(1) @binding(1) var image_sampler: binding_array<sampler>;
 
 // Fix for DX12 backend in wgpu which appears to only support struct push constants
-// wgpu::backend::wgpu_core: Shader translation error for stage ShaderStages(FRAGMENT): HLSL: Unimplemented("push-constant 'offset' has non-struct type; tracked by: https://github.com/gfx-rs/wgpu/issues/5683")
-struct BindlessOffset {
+struct Immediates {
     offset: u32,
 };
-var<push_constant> offset: BindlessOffset;
+var<immediate> immediates: Immediates;
 
 #else //BINDLESS
 @group(1) @binding(0) var image_texture: texture_2d<f32>;
@@ -64,8 +63,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     #ifdef BINDLESS
-    let image_texture = image_texture[offset.offset];
-    let image_sampler = image_sampler[offset.offset];
+    let image_texture = image_texture[immediates.offset];
+    let image_sampler = image_sampler[immediates.offset];
     #endif
 
     let texture_color_linear = textureSample(image_texture, image_sampler, in.uv);
