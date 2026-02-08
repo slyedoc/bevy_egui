@@ -4,29 +4,9 @@ use std::{
     num::{NonZero, NonZeroU32},
 };
 
-/// Defines Egui node graph.
-pub mod graph {
-    use bevy_render::render_graph::{RenderLabel, RenderSubGraph};
-
-    /// Egui subgraph (is run by [`super::RunEguiSubgraphOnEguiViewNode`]).
-    #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderSubGraph)]
-    pub struct SubGraphEgui;
-
-    /// Egui node defining the Egui rendering pass.
-    #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
-    pub enum NodeEgui {
-        /// Egui rendering pass.
-        EguiPass,
-    }
-}
-
-use crate::{
-    EguiContextSettings, EguiRenderOutput, RenderComputedScaleFactor,
-    render::graph::{NodeEgui, SubGraphEgui},
-};
-use bevy_app::SubApp;
+use crate::{EguiContextSettings, EguiRenderOutput, RenderComputedScaleFactor};
 use bevy_asset::{Handle, RenderAssetUsages, uuid_handle};
-use bevy_camera::Camera;
+use bevy_camera::{Camera, Hdr};
 use bevy_ecs::{
     component::Component,
     entity::Entity,
@@ -43,7 +23,6 @@ use bevy_mesh::VertexBufferLayout;
 use bevy_platform::collections::HashSet;
 use bevy_render::{
     MainWorld,
-    render_graph::{Node, NodeRunError, RenderGraph, RenderGraphContext},
     render_phase::TrackedRenderPass,
     render_resource::{
         BindGroupLayoutEntries, FragmentState, RenderPipelineDescriptor, SpecializedRenderPipeline,
@@ -52,7 +31,7 @@ use bevy_render::{
     },
     renderer::{RenderContext, RenderDevice},
     sync_world::{RenderEntity, TemporaryRenderEntity},
-    view::{ExtractedView, Hdr, RetainedViewEntity, ViewTarget},
+    view::{ExtractedView, RetainedViewEntity, ViewTarget},
 };
 use bevy_shader::{Shader, ShaderDefVal};
 use egui::{TextureFilter, TextureOptions};
@@ -93,38 +72,6 @@ pub struct EguiCameraView(pub Entity);
 /// This is the inverse of [`EguiCameraView`].
 #[derive(Component, Debug)]
 pub struct EguiViewTarget(pub Entity);
-
-/// Adds and returns an Egui subgraph.
-pub fn get_egui_graph(render_app: &mut SubApp) -> RenderGraph {
-    let pass_node = EguiPassNode::new(render_app.world_mut());
-    let mut graph = RenderGraph::default();
-    graph.add_node(NodeEgui::EguiPass, pass_node);
-    graph
-}
-
-/// A [`Node`] that executes the Egui rendering subgraph on the Egui view.
-pub struct RunEguiSubgraphOnEguiViewNode;
-
-impl Node for RunEguiSubgraphOnEguiViewNode {
-    fn run<'w>(
-        &self,
-        graph: &mut RenderGraphContext,
-        _: &mut RenderContext<'w>,
-        world: &'w World,
-    ) -> Result<(), NodeRunError> {
-        // Fetch the UI view.
-        let Some(mut render_views) = world.try_query::<&EguiCameraView>() else {
-            return Ok(());
-        };
-        let Ok(default_camera_view) = render_views.get(world, graph.view_entity()) else {
-            return Ok(());
-        };
-
-        // Run the subgraph on the Egui view.
-        graph.run_sub_graph(SubGraphEgui, vec![], Some(default_camera_view.0), None)?;
-        Ok(())
-    }
-}
 
 /// Extracts all Egui contexts associated with a camera into the render world.
 pub fn extract_egui_camera_view_system(
@@ -485,7 +432,7 @@ pub(crate) fn texture_options_as_sampler_descriptor(
     }
 }
 
-/// Callback to execute custom 'wgpu' rendering inside [`EguiPassNode`] render graph node.
+/// Callback to execute custom 'wgpu' rendering inside the egui render pass.
 ///
 /// Rendering can be implemented using for example:
 /// * native wgpu rendering libraries,
@@ -526,10 +473,10 @@ pub trait EguiBevyPaintCallbackImpl: Send + Sync {
     ///
     /// Can be used to implement custom render passes
     /// or to submit command buffers for execution before egui render pass
-    fn prepare_render<'w>(
+    fn prepare_render<'w, 's>(
         &self,
         info: egui::PaintCallbackInfo,
-        render_context: &mut RenderContext<'w>,
+        render_context: &mut RenderContext<'w, 's>,
         render_entity: RenderEntity,
         pipeline_key: EguiPipelineKey,
         world: &'w World,

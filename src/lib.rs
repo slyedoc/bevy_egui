@@ -607,7 +607,7 @@ pub struct EguiRenderOutput {
     /// Pairs of rectangles and paint commands.
     ///
     /// The field gets populated during the [`EguiPostUpdateSet::ProcessOutput`] system (belonging to bevy's [`PostUpdate`])
-    /// and processed during [`render::EguiPassNode`]'s `update`.
+    /// and processed during [`render::egui_paint_callback_update`].
     pub paint_jobs: Vec<egui::ClippedPrimitive>,
     /// The change in egui textures since last frame.
     pub textures_delta: egui::TexturesDelta,
@@ -1264,59 +1264,7 @@ impl Plugin for EguiPlugin {
                 bevy_shader::Shader::from_wgsl
             );
 
-            let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
-                return;
-            };
-
-            let egui_graph_2d = render::get_egui_graph(render_app);
-            let egui_graph_3d = render::get_egui_graph(render_app);
-            let mut graph = render_app
-                .world_mut()
-                .resource_mut::<bevy_render::render_graph::RenderGraph>();
-
-            if let Some(graph_2d) =
-                graph.get_sub_graph_mut(bevy_core_pipeline::core_2d::graph::Core2d)
-            {
-                graph_2d.add_sub_graph(render::graph::SubGraphEgui, egui_graph_2d);
-                graph_2d.add_node(
-                    render::graph::NodeEgui::EguiPass,
-                    render::RunEguiSubgraphOnEguiViewNode,
-                );
-                graph_2d.add_node_edge(
-                    bevy_core_pipeline::core_2d::graph::Node2d::EndMainPass,
-                    render::graph::NodeEgui::EguiPass,
-                );
-                graph_2d.add_node_edge(
-                    bevy_core_pipeline::core_2d::graph::Node2d::EndMainPassPostProcessing,
-                    render::graph::NodeEgui::EguiPass,
-                );
-                graph_2d.add_node_edge(
-                    render::graph::NodeEgui::EguiPass,
-                    bevy_core_pipeline::core_2d::graph::Node2d::Upscaling,
-                );
-            }
-
-            if let Some(graph_3d) =
-                graph.get_sub_graph_mut(bevy_core_pipeline::core_3d::graph::Core3d)
-            {
-                graph_3d.add_sub_graph(render::graph::SubGraphEgui, egui_graph_3d);
-                graph_3d.add_node(
-                    render::graph::NodeEgui::EguiPass,
-                    render::RunEguiSubgraphOnEguiViewNode,
-                );
-                graph_3d.add_node_edge(
-                    bevy_core_pipeline::core_3d::graph::Node3d::EndMainPass,
-                    render::graph::NodeEgui::EguiPass,
-                );
-                graph_3d.add_node_edge(
-                    bevy_core_pipeline::core_3d::graph::Node3d::EndMainPassPostProcessing,
-                    render::graph::NodeEgui::EguiPass,
-                );
-                graph_3d.add_node_edge(
-                    render::graph::NodeEgui::EguiPass,
-                    bevy_core_pipeline::core_3d::graph::Node3d::Upscaling,
-                );
-            }
+            // Egui render pass and paint callback update are scheduled in finish()
         }
 
         #[cfg(feature = "accesskit")]
@@ -1328,8 +1276,8 @@ impl Plugin for EguiPlugin {
 
     #[cfg(feature = "render")]
     fn finish(&self, app: &mut App) {
-        #[cfg(feature = "bevy_ui")]
-        let bevy_ui_is_enabled = app.is_plugin_added::<bevy_ui_render::UiRenderPlugin>();
+        use bevy_core_pipeline::{Core2d, Core2dSystems, Core3d, Core3dSystems};
+        use bevy_core_pipeline::upscaling::upscaling;
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
@@ -1341,8 +1289,6 @@ impl Plugin for EguiPlugin {
                 .init_resource::<render::systems::EguiTransforms>()
                 .init_resource::<render::systems::EguiRenderData>()
                 .add_systems(
-                    // Seems to be just the set to add/remove nodes, as it'll run before
-                    // `RenderSystems::ExtractCommands` where render nodes get updated.
                     ExtractSchedule,
                     render::extract_egui_camera_view_system,
                 )
@@ -1364,58 +1310,80 @@ impl Plugin for EguiPlugin {
                     render::systems::queue_pipelines_system.in_set(RenderSystems::Queue),
                 );
 
-            // Configure a fixed rendering order between Bevy UI and egui.
-            // Otherwise, this order is effectively decided at random on every game startup.
-            #[cfg(feature = "bevy_ui")]
-            if bevy_ui_is_enabled {
-                use bevy_render::render_graph::RenderLabel;
-                let mut graph = render_app
-                    .world_mut()
-                    .resource_mut::<bevy_render::render_graph::RenderGraph>();
-                let (below, above) = match self.ui_render_order {
-                    UiRenderOrder::EguiAboveBevyUi => (
-                        bevy_ui_render::graph::NodeUi::UiPass.intern(),
-                        render::graph::NodeEgui::EguiPass.intern(),
-                    ),
-                    UiRenderOrder::BevyUiAboveEgui => (
-                        render::graph::NodeEgui::EguiPass.intern(),
-                        bevy_ui_render::graph::NodeUi::UiPass.intern(),
-                    ),
-                };
-                if let Some(graph_2d) =
-                    graph.get_sub_graph_mut(bevy_core_pipeline::core_2d::graph::Core2d)
-                {
-                    // Only apply if the bevy_ui plugin is actually enabled.
-                    // In theory we could use RenderGraph::try_add_node_edge instead and ignore the result,
-                    // but that still seems to end up writing the corrupt edge into the graph,
-                    // causing the game to panic down the line.
-                    match graph_2d.get_node_state(bevy_ui_render::graph::NodeUi::UiPass) {
-                        Ok(_) => {
-                            graph_2d.add_node_edge(below, above);
-                        }
-                        Err(err) => log::warn!(
-                            error = &err as &dyn std::error::Error,
-                            "bevy_ui::UiPlugin is enabled but could not be found in 2D render graph, rendering order will be inconsistent",
-                        ),
-                    }
-                }
-                if let Some(graph_3d) =
-                    graph.get_sub_graph_mut(bevy_core_pipeline::core_3d::graph::Core3d)
-                {
-                    match graph_3d.get_node_state(bevy_ui_render::graph::NodeUi::UiPass) {
-                        Ok(_) => {
-                            graph_3d.add_node_edge(below, above);
-                        }
-                        Err(err) => log::warn!(
-                            error = &err as &dyn std::error::Error,
-                            "bevy_ui::UiPlugin is enabled but could not be found in 3D render graph, rendering order will be inconsistent",
-                        ),
-                    }
-                }
-            } else {
-                log::debug!(
-                    "bevy_ui feature is enabled, but bevy_ui::UiPlugin is disabled, not applying configured rendering order"
+            // Schedule paint callback updates and egui render pass.
+            // Paint callback updates must run before the render pass.
+            // The render pass runs after post-processing and before upscaling.
+            render_app
+                .add_systems(
+                    Core2d,
+                    render::egui_paint_callback_update
+                        .before(render::egui_pass)
+                        .after(Core2dSystems::PostProcess)
+                        .before(upscaling),
                 )
+                .add_systems(
+                    Core3d,
+                    render::egui_paint_callback_update
+                        .before(render::egui_pass)
+                        .after(Core3dSystems::PostProcess)
+                        .before(upscaling),
+                );
+
+            #[cfg(feature = "bevy_ui")]
+            {
+                match self.ui_render_order {
+                    UiRenderOrder::EguiAboveBevyUi => {
+                        render_app
+                            .add_systems(
+                                Core2d,
+                                render::egui_pass
+                                    .after(bevy_ui_render::ui_pass)
+                                    .after(Core2dSystems::PostProcess)
+                                    .before(upscaling),
+                            )
+                            .add_systems(
+                                Core3d,
+                                render::egui_pass
+                                    .after(bevy_ui_render::ui_pass)
+                                    .after(Core3dSystems::PostProcess)
+                                    .before(upscaling),
+                            );
+                    }
+                    UiRenderOrder::BevyUiAboveEgui => {
+                        render_app
+                            .add_systems(
+                                Core2d,
+                                render::egui_pass
+                                    .before(bevy_ui_render::ui_pass)
+                                    .after(Core2dSystems::PostProcess)
+                                    .before(upscaling),
+                            )
+                            .add_systems(
+                                Core3d,
+                                render::egui_pass
+                                    .before(bevy_ui_render::ui_pass)
+                                    .after(Core3dSystems::PostProcess)
+                                    .before(upscaling),
+                            );
+                    }
+                }
+            }
+
+            #[cfg(not(feature = "bevy_ui"))]
+            {
+                render_app
+                    .add_systems(
+                        Core2d,
+                        render::egui_pass
+                            .after(Core2dSystems::PostProcess)
+                            .before(upscaling),
+                    )
+                    .add_systems(
+                        Core3d,
+                        render::egui_pass
+                            .after(Core3dSystems::PostProcess)
+                            .before(upscaling),
+                    );
             }
         }
     }
