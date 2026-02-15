@@ -1651,9 +1651,9 @@ pub fn update_egui_textures_system(
             if let Some(pos) = image_delta.pos {
                 // Partial update.
                 if let Some(managed_texture) = egui_managed_textures.get_mut(&(entity, texture_id))
-                    && let Some(image) = image_assets.get_mut(managed_texture.handle.id())
+                    && let Some(mut image) = image_assets.get_mut(managed_texture.handle.id())
                 {
-                    if update_image_rect(image, pos, &color_image).is_err() {
+                    if update_image_rect(&mut image, pos, &color_image).is_err() {
                         log::error!(
                             "Failed to write into texture (id: {:?}) for partial update",
                             texture_id
