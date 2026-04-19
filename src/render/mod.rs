@@ -134,14 +134,17 @@ pub fn extract_egui_camera_view_system(
                             UI_CAMERA_FAR + UI_CAMERA_TRANSFORM_OFFSET,
                         ),
                         clip_from_world: None,
-                        hdr,
+                        target_format: if hdr {
+                            bevy_render::render_resource::TextureFormat::Rgba16Float
+                        } else {
+                            bevy_render::render_resource::TextureFormat::Bgra8UnormSrgb
+                        },
                         viewport: UVec4::from((
                             physical_viewport_rect.min,
                             physical_viewport_rect.size(),
                         )),
                         color_grading: Default::default(),
                         invert_culling: false,
-                        compositing_space: None,
                     },
                     // Link to the main camera view.
                     EguiViewTarget(render_entity),
