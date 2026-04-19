@@ -1,3 +1,5 @@
+enable wgpu_binding_array;
+
 struct Transform {
     scale: vec2<f32>,
     translation: vec2<f32>,
